@@ -18,6 +18,18 @@ SCRATCH
 """
 import socket
 import sys
+def command_line_argument_exists():
+    return len(sys.argv) == 2
+
+def createListeningSocket(port):
+    listening_socket = socket.socket()
+    listening_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    listening_socket.bind(('', int(port)))
+
+    print(f"Listening for connections on port {port} ...")
+    listening_socket.listen()
+
+    return listening_socket
 
 def getRequest(socket):
     request = b''
@@ -29,8 +41,7 @@ def getRequest(socket):
             break
     return request
 
-
-def buildResponse():
+def createResponse():
     response = ""
     response += "HTTP/1.1 200 OK\r\n"
     response += "Content-Type: text/plain\r\n"
@@ -40,25 +51,20 @@ def buildResponse():
     response += "Hello!"
     return response
 
-if len(sys.argv) != 2:
+
+if not command_line_argument_exists():
     print("Please enter exactly one argument into the script.")
     print("Usage:\n\tpython3 webserver.py [port number]")
     quit()
 
-port = sys.argv[1]
-listening_socket = socket.socket()
-listening_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-listening_socket.bind(('', int(port)))
-
-print(f"Listening for connections on port {port} ...")
-listening_socket.listen()
+listening_socket = createListeningSocket(sys.argv[1])
 
 while True:
     connection, client_address = listening_socket.accept()
     print(f"Accepting connection on {client_address}")
 
     request = getRequest(connection)
-    response = buildResponse()
+    response = createResponse()
     connection.sendall(response.encode("ISO-8859-1"))
     print(f"Closing connection on {client_address}\n")
     connection.close()
