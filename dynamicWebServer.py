@@ -51,20 +51,23 @@ def create_response():
     response += "Hello!"
     return response
 
+def main():
+    if not command_line_argument_exists():
+        print("Please enter exactly one argument into the script.")
+        print("Usage:\n\tpython3 webserver.py [port number]")
+        quit()
 
-if not command_line_argument_exists():
-    print("Please enter exactly one argument into the script.")
-    print("Usage:\n\tpython3 webserver.py [port number]")
-    quit()
+    listening_socket = create_listening_socket(sys.argv[1])
 
-listening_socket = createListeningSocket(sys.argv[1])
+    while True:
+        connection, client_address = listening_socket.accept()
+        print(f"Accepting connection on {client_address}")
 
-while True:
-    connection, client_address = listening_socket.accept()
-    print(f"Accepting connection on {client_address}")
+        request = get_request(connection)
+        response = create_response()
+        connection.sendall(response.encode("ISO-8859-1"))
+        print(f"Closing connection on {client_address}\n")
+        connection.close()
 
-    request = getRequest(connection)
-    response = createResponse()
-    connection.sendall(response.encode("ISO-8859-1"))
-    print(f"Closing connection on {client_address}\n")
-    connection.close()
+if __name__ == "__main__":
+    main()
