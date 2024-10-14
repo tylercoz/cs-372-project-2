@@ -21,7 +21,7 @@ import sys
 def command_line_argument_exists():
     return len(sys.argv) == 2
 
-def createListeningSocket(port):
+def create_listening_socket(port):
     listening_socket = socket.socket()
     listening_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     listening_socket.bind(('', int(port)))
@@ -31,7 +31,7 @@ def createListeningSocket(port):
 
     return listening_socket
 
-def getRequest(socket):
+def get_request(socket):
     request = b''
     while True:
         incoming_data = socket.recv(64)
@@ -41,7 +41,7 @@ def getRequest(socket):
             break
     return request
 
-def createResponse():
+def create_response():
     response = ""
     response += "HTTP/1.1 200 OK\r\n"
     response += "Content-Type: text/plain\r\n"
