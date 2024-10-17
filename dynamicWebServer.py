@@ -6,19 +6,10 @@ Description: Create a basic web server.
                  > python3 webserver.py 15000
 """
 
-"""
-SCRATCH
-- [x] Parse that request header to get the file name.
-- [x] Strip the path off for security reasons.
-- [ ] Read the data from the named file.
-- [ ] Determine the type of data in the file, HTML or text.
-- [ ] Build an HTTP response packet with the file data in the payload.
-- [ ] Send that HTTP response back to the client.
-
-"""
 import socket
 import sys
 import os
+
 def command_line_argument_exists():
     return len(sys.argv) == 2
 
@@ -40,17 +31,28 @@ def get_request(socket):
         request_literal = request.decode("ISO-8859-1")
         if request_literal[-4:] == '\r\n\r\n':
             break
-    return request.decode()
+    return request.decode("ISO-8859-1")
 
-def create_response():
+def root_response():
+    header = ""
+    header += "HTTP/1.1 200 OK\r\n"
+    header += "Content-Type: text/plain\r\n"
+    header += "Content-Length: 27\r\n"
+    header += "Connection: close\r\n"
+    header += "\r\n"
+    header += "This is the root directory."
+    return header
+
+def send_404(connection):
     response = ""
-    response += "HTTP/1.1 200 OK\r\n"
+    response += "HTTP/1.1 404 File Not Found\r\n"
     response += "Content-Type: text/plain\r\n"
-    response += "Content-Length: 6\r\n"
+    response += "Content-Length: 13\r\n"
     response += "Connection: close\r\n"
     response += "\r\n"
-    response += "Hello!"
-    return response
+    response += "404 not found"
+
+    connection.sendall(response.encode("ISO-8859-1"))
 
 def get_file_path(request):
     first_line_of_request = request.split('\r\n')[0]
@@ -60,7 +62,58 @@ def get_file_path(request):
 def get_file_name(path):
     return os.path.split(path)[-1]
 
+
+def get_file_data(file_name):
+    with open(file_name, "rb") as fp:
+        data = fp.read()   # Read entire file
+        return data
+
+    raise FileNotFoundError
+
+
+def parse_request(request):
+    file_attributes = {}
+    file_attributes['path'] = get_file_path(request)
+    if file_attributes['path'] == "/":
+        return file_attributes
+    file_attributes['name'] = get_file_name(file_attributes['path'])
+    file_attributes['type'] = os.path.splitext(file_attributes['name'])[-1]
+
+    data = get_file_data(file_attributes['name'])
+    if isinstance(data, bytes):
+        file_attributes['data'] = data
+        file_attributes['len'] = len(data)
+
+    return file_attributes
+
+def build_response(file_attributes):
+    if file_attributes['path'] == "/":
+        return root_response()
+
+    header = ""
+    header += "HTTP/1.1 200 OK\r\n"
+    if file_attributes['type'] == ".html":
+        header += "Content-Type: text/html\r\n"
+    else:
+        header += "Content-Type: text/plain\r\n"
+    header += f"Content-Length: {file_attributes['len']}\r\n"
+    header += "Connection: close\r\n"
+    header += "\r\n"
+    header += f"{file_attributes['data']}"
+    return header
+
+def send_response(connection, request):
+    try:
+        request_attributes = parse_request(request)
+    except FileNotFoundError:
+        send_404(connection)
+        return
+
+    response = build_response(request_attributes)
+    connection.sendall(response.encode("ISO-8859-1"))
+
 def main():
+
     if not command_line_argument_exists():
         print("Please enter exactly one argument into the script.")
         print("Usage:\n\tpython3 webserver.py [port number]")
@@ -73,10 +126,8 @@ def main():
         print(f"Accepting connection on {client_address}")
 
         request = get_request(connection)
-        requested_file_path = get_file_path(request)
-        requested_file_name = get_file_name(requested_file_path)
-        response = create_response()
-        connection.sendall(response.encode("ISO-8859-1"))
+        send_response(connection, request)
+
         print(f"Closing connection on {client_address}\n")
         connection.close()
 

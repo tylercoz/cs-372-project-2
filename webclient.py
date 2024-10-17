@@ -10,19 +10,20 @@ Description: Connect to an internet domain and send it a basic request
 import sys
 import socket
 
-if len(sys.argv) != 2:
+if len(sys.argv) < 2 or len(sys.argv) > 3:
     print("Please enter exactly one argument into the script.")
     print("Usage:\n\tpython3 webclient.py [web server address]")
-    quit()
+    sys.exit(1)
 
 mySocket = socket.socket()
 
 web_address = sys.argv[1]
+path = sys.argv[2] if len(sys.argv) > 2 else "/"
 port = 80
 mySocket.connect((web_address, port))
 
-request = "GET / HTTP/1.1\r\n\
-Host: example.com\r\n\
+request = f"GET {path} HTTP/1.1\r\n\
+Host: {web_address}\r\n\
 Connection: close\r\n\
 \r\n"
 mySocket.sendall(request.encode("ISO-8859-1"))
