@@ -62,14 +62,10 @@ def get_file_path(request):
 def get_file_name(path):
     return os.path.split(path)[-1]
 
-
 def get_file_data(file_name):
     with open(file_name, "rb") as fp:
         data = fp.read()   # Read entire file
         return data
-
-    raise FileNotFoundError
-
 
 def parse_request(request):
     file_attributes = {}
@@ -80,9 +76,9 @@ def parse_request(request):
     file_attributes['type'] = os.path.splitext(file_attributes['name'])[-1]
 
     data = get_file_data(file_attributes['name'])
-    if isinstance(data, bytes):
-        file_attributes['data'] = data
-        file_attributes['len'] = len(data)
+
+    file_attributes['data'] = data
+    file_attributes['len'] = len(data)
 
     return file_attributes
 
